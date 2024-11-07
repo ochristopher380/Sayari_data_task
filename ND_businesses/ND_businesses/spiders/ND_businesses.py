@@ -8,7 +8,7 @@ class NDBusinesses(scrapy.Spider):
     def start_requests(self):
 
       url = 'https://firststop.sos.nd.gov/api/Records/businesssearch'
-
+      #probably more headers than needed but better to have them to not get flagged as a bot
       headers = {
           "accept": "*/*",
           "accept-language": "en-US,en;q=0.9",
@@ -26,7 +26,8 @@ class NDBusinesses(scrapy.Spider):
           "sec-fetch-site": "same-origin",
           "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0"
       }
-
+      #the web app search has bugs and will return businesses that do not start with X 
+      #it may also fail to return some businesses starting with X which would require more requests to verify
       body = '{"SEARCH_VALUE":"X","STARTS_WITH_YN":"true","ACTIVE_ONLY_YN":true}'
 
       request = Request(
@@ -43,12 +44,14 @@ class NDBusinesses(scrapy.Spider):
     def parse(self, response):
         try:
             data = json.loads(response.text)
-            #filter json response with list comprehension
+            #filter json response with list comprehension to businesses that start with X
             records = [i for i in data['rows'].keys() if data['rows'][i]['TITLE'][0].startswith('X')]
 
             for row in records:
+                #I also tried the ending /true for the link to see if it produced more data on a test and it did not
+                #left as false since that is the apps normal behavior
                 r_url = f'https://firststop.sos.nd.gov/api/FilingDetail/business/{row}/false'
-
+                #probably more headers than needed but better to have them to not get flagged as a bot
                 headers = {
                     "accept": "*/*",
                     "accept-language": "en-US,en;q=0.9",
